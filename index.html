@@ -1,0 +1,2736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kernify - Advanced Document Summarization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #ffffff;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes logoAnimation {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes textGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ===== HEADER & NAVIGATION ===== */
+        .header {
+            background: rgba(26, 31, 41, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #2d3748;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: translateY(-2px);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            animation: logoAnimation 0.8s ease-out;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textGradient 5s ease infinite;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 8px 0;
+        }
+
+        .nav-link:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+        }
+
+        .nav-link:hover:after {
+            width: 100%;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            outline: none;
+        }
+
+        .btn-login {
+            background: transparent;
+            color: #a0aec0;
+            border: 1px solid #4a5568;
+        }
+
+        .btn-login:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border-color: #667eea;
+        }
+
+        .btn-signup {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* ===== MAIN CONTAINER ===== */
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+            min-height: calc(100vh - 120px);
+            animation: fadeIn 0.8s ease-out 0.2s both;
+        }
+
+        /* ===== CONTENT AREAS ===== */
+        .main-content {
+            background: rgba(26, 31, 41, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .main-content:hover {
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .upload-section {
+            padding: 32px;
+            text-align: center;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .upload-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffffff;
+            background: linear-gradient(90deg, #ffffff, #a0aec0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .upload-subtitle {
+            color: #a0aec0;
+            margin-bottom: 24px;
+            font-size: 16px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-area {
+            border: 2px dashed #4a5568;
+            border-radius: 16px;
+            padding: 48px 24px;
+            background: rgba(15, 20, 25, 0.5);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: rgba(26, 31, 41, 0.5);
+            transform: translateY(-5px);
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: rgba(26, 31, 41, 0.5);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 56px;
+            color: #4a5568;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover .upload-icon {
+            color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .upload-text {
+            color: #a0aec0;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .upload-formats {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .process-btn:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .process-btn:hover:after {
+            left: 100%;
+        }
+
+        .process-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .content-area {
+            padding: 24px;
+            max-height: 600px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 24px;
+            background: rgba(15, 20, 25, 0.5);
+            border-radius: 10px;
+            padding: 6px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .summary-text {
+            background: rgba(15, 20, 25, 0.5);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            color: #e2e8f0;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .summary-text p {
+            margin-bottom: 16px;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .sidebar-card {
+            background: rgba(26, 31, 41, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .file-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #a0aec0;
+            font-size: 15px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.3);
+        }
+
+        .file-detail:last-child {
+            border-bottom: none;
+        }
+
+        .file-detail-label {
+            font-weight: 500;
+        }
+
+        .file-detail-value {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .option-card {
+            background: rgba(15, 20, 25, 0.5);
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            border-radius: 12px;
+            padding: 20px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-card:hover {
+            border-color: #667eea;
+            background: rgba(26, 31, 41, 0.5);
+            transform: translateY(-3px);
+        }
+
+        .option-card.active {
+            border-color: #667eea;
+            background: rgba(26, 31, 41, 0.5);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .option-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+
+        .option-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(45, 55, 72, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 24px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .mind-map {
+            background: rgba(15, 20, 25, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            padding: 20px;
+            min-height: 300px;
+            position: relative;
+            overflow: auto;
+            width: 100%;
+            height: 500px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .mind-map-inner {
+            position: relative;
+            width: 1200px;
+            height: 900px;
+            margin: 0 auto;
+        }
+
+        .mind-map-node {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 500;
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            text-align: center;
+            max-width: 150px;
+            min-width: 100px;
+        }
+
+        .mind-map-node:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .mind-map-node.center {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            font-size: 15px;
+            font-weight: 600;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            min-width: 120px;
+        }
+
+        .mind-map-connection {
+            position: absolute;
+            background: rgba(102, 126, 234, 0.5);
+            height: 2px;
+            transform-origin: 0 0;
+            z-index: 1;
+        }
+
+        .highlighted-text {
+            background: rgba(15, 20, 25, 0.5);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            color: #e2e8f0;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+
+        .highlight {
+            background: rgba(102, 126, 234, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .highlight:hover {
+            background: rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: #a0aec0;
+            font-size: 16px;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(45, 55, 72, 0.5);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite;
+        }
+
+        /* ===== HISTORY SECTION ===== */
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(15, 20, 25, 0.3);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid #667eea;
+        }
+
+        .history-item:hover {
+            background: rgba(15, 20, 25, 0.5);
+            transform: translateX(5px);
+        }
+
+        .history-item-title {
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-item-details {
+            display: flex;
+            justify-content: space-between;
+            color: #a0aec0;
+            font-size: 13px;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 20px;
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        /* ===== MODALS ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: rgba(26, 31, 41, 0.95);
+            border-radius: 16px;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            width: 100%;
+            max-width: 500px;
+            padding: 32px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            animation: scaleIn 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #a0aec0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: #ffffff;
+            transform: rotate(90deg);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a0aec0;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            background: rgba(15, 20, 25, 0.5);
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .modal-footer {
+            text-align: center;
+            margin-top: 24px;
+            color: #a0aec0;
+        }
+
+        .modal-footer a {
+            color: #667eea;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .modal-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== MOBILE NAVIGATION ===== */
+        .mobile-menu-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            background: rgba(26, 31, 41, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            z-index: 99;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .mobile-nav-link {
+            color: #a0aec0;
+            text-decoration: none;
+            font-size: 18px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mobile-nav-link i {
+            width: 24px;
+            text-align: center;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+            
+            .sidebar {
+                grid-row: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+
+            .user-actions {
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Mobile Navigation */
+            .mobile-nav.active {
+                display: block;
+                animation: fadeIn 0.3s ease;
+            }
+
+            /* Upload Section */
+            .upload-section {
+                padding: 20px 16px;
+            }
+
+            .upload-title {
+                font-size: 22px;
+            }
+
+            .upload-subtitle {
+                font-size: 14px;
+            }
+
+            .upload-area {
+                padding: 30px 16px;
+            }
+
+            .upload-icon {
+                font-size: 40px;
+            }
+
+            .upload-text {
+                font-size: 16px;
+            }
+
+            .upload-formats {
+                font-size: 12px;
+            }
+
+            .process-btn {
+                padding: 12px 24px;
+                font-size: 15px;
+                margin-top: 16px;
+            }
+
+            /* Content Area */
+            .content-area {
+                padding: 16px;
+                max-height: 500px;
+            }
+
+            .tab-buttons {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .summary-text, .highlighted-text {
+                padding: 16px;
+                font-size: 15px;
+            }
+
+            /* Sidebar */
+            .sidebar-card {
+                padding: 16px;
+            }
+
+            .sidebar-title {
+                font-size: 18px;
+            }
+
+            /* Mind Map */
+            .mind-map {
+                height: 400px;
+                padding: 12px;
+            }
+
+            .mind-map-inner {
+                width: 100%;
+                height: 100%;
+            }
+
+            .mind-map-controls {
+                flex-wrap: wrap;
+            }
+
+            .mind-map-btn {
+                padding: 8px 12px;
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+
+            /* File Info */
+            .file-detail {
+                font-size: 14px;
+            }
+
+            /* Modals */
+            .modal-content {
+                padding: 24px 16px;
+                max-width: 90%;
+            }
+
+            .modal-title {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .form-input {
+                padding: 12px 14px;
+            }
+
+            .submit-btn {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .upload-title {
+                font-size: 20px;
+            }
+
+            .upload-area {
+                padding: 24px 12px;
+            }
+
+            .process-btn {
+                width: 100%;
+            }
+
+            .logo-text {
+                font-size: 20px;
+            }
+
+            .logo-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            .container {
+                padding: 12px;
+            }
+
+            .mind-map {
+                height: 350px;
+            }
+        }
+        
+        /* Summary Enhancements */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            color: #667eea;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+            padding-bottom: 5px;
+        }
+        
+        .insight-card {
+            background: rgba(15, 20, 25, 0.4);
+            border-left: 3px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .bullet-points {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .bullet-points li {
+            margin-bottom: 8px;
+        }
+        
+        .key-point {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .key-point-icon {
+            font-size: 18px;
+            color: #667eea;
+            margin-right: 10px;
+            min-width: 24px;
+        }
+        
+        .key-point-content {
+            flex: 1;
+        }
+        
+        .conclusion {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(102, 126, 234, 0.3);
+            font-style: italic;
+        }
+        
+        .stat-highlight {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        /* Mind Map Enhancements */
+        .mind-map-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .mind-map-btn {
+            background: rgba(15, 20, 25, 0.5);
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            color: #a0aec0;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mind-map-btn:hover {
+            background: rgba(26, 31, 41, 0.7);
+            color: #e2e8f0;
+        }
+        
+        .mind-map-info {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(15, 20, 25, 0.7);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #a0aec0;
+        }
+        
+        /* Account Center Styles */
+        .account-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .account-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-bottom: 20px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .account-avatar:hover::after {
+            content: 'Change';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .account-info {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .account-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.3);
+        }
+        
+        .account-actions {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .account-btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: rgba(15, 20, 25, 0.5);
+            border: 1px solid rgba(45, 55, 72, 0.5);
+            color: #a0aec0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .account-btn:hover {
+            background: rgba(26, 31, 41, 0.7);
+            color: #e2e8f0;
+            border-color: #667eea;
+        }
+        
+        .account-btn.delete {
+            border-color: #e53e3e;
+            color: #e53e3e;
+        }
+        
+        .account-btn.delete:hover {
+            background: rgba(229, 62, 62, 0.1);
+        }
+        
+        .confirmation-modal {
+            text-align: center;
+        }
+        
+        .confirmation-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .confirmation-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .confirm-delete {
+            background: #e53e3e;
+            color: white;
+            border: none;
+        }
+        
+        .cancel-delete {
+            background: transparent;
+            color: #a0aec0;
+            border: 1px solid rgba(45, 55, 72, 0.5);
+        }
+        
+        /* Firebase Highlight */
+        .firebase-highlight {
+            background-color: #fffbdd;
+            border: 2px solid #ffd700;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .firebase-highlight h3 {
+            color: #e67e22;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        .firebase-highlight::before {
+            content: "IMPORTANT";
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: #ffd700;
+            color: #333;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header with navigation -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon"><img src="logo.png" alt="Kernify Logo" width="40" height="40" style="border-radius: 8px;"></div>
+            <div class="logo-text">Kernify</div>
+        </div>
+        
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <nav class="nav-links">
+            <a href="#" class="nav-link" id="featuresLink"><i class="fas fa-star"></i> Features</a>
+            <a href="#" class="nav-link" id="aboutLink"><i class="fas fa-info-circle"></i> About</a>
+            <a href="#" class="nav-link" id="helpLink"><i class="fas fa-question-circle"></i> Help</a>
+        </nav>
+        <div class="user-actions">
+            <button class="btn btn-login" id="loginBtn">Log In</button>
+            <button class="btn btn-signup" id="signupBtn">Sign Up</button>
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <div class="user-avatar" id="userAvatar"></div>
+                <div class="user-name" id="userName">User</div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav-links">
+            <a href="#" class="mobile-nav-link" id="mobileFeaturesLink">
+                <i class="fas fa-star"></i> Features
+            </a>
+            <a href="#" class="mobile-nav-link" id="mobileAboutLink">
+                <i class="fas fa-info-circle"></i> About
+            </a>
+            <a href="#" class="mobile-nav-link" id="mobileHelpLink">
+                <i class="fas fa-question-circle"></i> Help
+            </a>
+            <div class="mobile-user-actions">
+                <button class="btn btn-login" id="mobileLoginBtn">Log In</button>
+                <button class="btn btn-signup" id="mobileSignupBtn">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content area -->
+    <div class="container">
+        <main class="main-content">
+            <div class="upload-section">
+                <h1 class="upload-title">Kernify - Intelligent Document Summarizer</h1>
+                <p class="upload-subtitle">Upload your document to generate detailed summaries, interactive mind maps, and key highlights</p>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <div class="upload-text">Drop your document here or click to browse</div>
+                    <div class="upload-formats">Supports PDF, DOC, DOCX, MD, XLS, XLSX, PPT, PPTX, HTML, TXT</div>
+                    <input type="file" class="file-input" id="fileInput" accept=".pdf,.doc,.docx,.md,.xls,.xlsx,.ppt,.pptx,.html,.txt">
+                    <button class="process-btn" id="processBtn" disabled><i class="fas fa-cogs"></i> Process Document</button>
+                </div>
+            </div>
+
+            <div class="content-area" id="contentArea">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="summary"><i class="fas fa-file-alt"></i> Summary</button>
+                    <button class="tab-btn" data-tab="mindmap"><i class="fas fa-project-diagram"></i> Mind Map</button>
+                    <button class="tab-btn" data-tab="highlights"><i class="fas fa-highlighter"></i> Highlights</button>
+                </div>
+
+                <div class="tab-content active" id="summary">
+                    <div class="summary-text" id="summaryText">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Generating comprehensive summary...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="mindmap">
+                    <div class="mind-map-controls">
+                        <button class="mind-map-btn" id="zoomInBtn"><i class="fas fa-search-plus"></i> Zoom In</button>
+                        <button class="mind-map-btn" id="zoomOutBtn"><i class="fas fa-search-minus"></i> Zoom Out</button>
+                        <button class="mind-map-btn" id="resetViewBtn"><i class="fas fa-sync-alt"></i> Reset View</button>
+                    </div>
+                    <div class="mind-map" id="mindMapContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Creating interactive mind map...
+                        </div>
+                    </div>
+                    <div class="mind-map-info">Click and drag to move nodes</div>
+                </div>
+
+                <div class="tab-content" id="highlights">
+                    <div class="highlighted-text" id="highlightedText">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Identifying key sections and highlights...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="sidebar">
+            <div class="sidebar-card">
+                <h3 class="sidebar-title"><i class="fas fa-file"></i> File Information</h3>
+                <div class="file-info" id="fileInfo">
+                    <div class="file-detail">
+                        <span class="file-detail-label">Name:</span>
+                        <span class="file-detail-value" id="fileName">No file selected</span>
+                    </div>
+                    <div class="file-detail">
+                        <span class="file-detail-label">Size:</span>
+                        <span class="file-detail-value" id="fileSize">-</span>
+                    </div>
+                    <div class="file-detail">
+                        <span class="file-detail-label">Type:</span>
+                        <span class="file-detail-value" id="fileType">-</span>
+                    </div>
+                    <div class="file-detail">
+                        <span class="file-detail-label">Status:</span>
+                        <span class="file-detail-value" id="fileStatus">Ready</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3 class="sidebar-title"><i class="fas fa-cog"></i> Summary Options</h3>
+                <div class="options-grid">
+                    <div class="option-card active" data-option="brief">
+                        <div class="option-icon"><i class="fas fa-bolt"></i></div>
+                        <div class="option-title">Brief Overview</div>
+                    </div>
+                    <div class="option-card" data-option="detailed">
+                        <div class="option-icon"><i class="fas fa-file-alt"></i></div>
+                        <div class="option-title">Detailed Analysis</div>
+                    </div>
+                    <div class="option-card" data-option="bullet">
+                        <div class="option-icon"><i class="fas fa-list"></i></div>
+                        <div class="option-title">Bullet Points</div>
+                    </div>
+                    <div class="option-card" data-option="key">
+                        <div class="option-icon"><i class="fas fa-key"></i></div>
+                        <div class="option-title">Key Insights</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3 class="sidebar-title"><i class="fas fa-history"></i> Recent Documents</h3>
+                <div class="history-list" id="historyList">
+                    <div class="empty-history">No history yet. Process your first document!</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeLoginModal">&times;</span>
+            <h2 class="modal-title">Log In to Kernify</h2>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="loginEmail" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password">
+            </div>
+            <button class="submit-btn" id="loginSubmit">Log In</button>
+            <div class="modal-footer">
+                Don't have an account? <a href="#" id="showSignup">Sign Up</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeSignupModal">&times;</span>
+            <h2 class="modal-title">Create Kernify Account</h2>
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-input" id="signupName" placeholder="Enter your name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="signupEmail" placeholder="Enter your email">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="signupPassword" placeholder="Create a password">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" class="form-input" id="signupConfirmPassword" placeholder="Confirm your password">
+            </div>
+            <button class="submit-btn" id="signupSubmit">Create Account</button>
+            <div class="modal-footer">
+                Already have an account? <a href="#" id="showLogin">Log In</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="featuresModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeFeaturesModal">&times;</span>
+            <h2 class="modal-title">Kernify Features</h2>
+            <div class="summary-text">
+                <p><strong>Advanced Document Summarization:</strong> Kernify uses cutting-edge AI to create comprehensive summaries of your documents in various formats.</p>
+                <p><strong>Interactive Mind Maps:</strong> Visualize document structure and relationships with our dynamic mind mapping technology.</p>
+                <p><strong>Key Highlight Extraction:</strong> Automatically identify and highlight the most important sections of your documents.</p>
+                <p><strong>Multi-Format Support:</strong> Works with PDF, Word, Excel, PowerPoint, and text documents.</p>
+                <p><strong>Cloud Sync:</strong> Access your documents and summaries from any device with your Kernify account.</p>
+                <p><strong>Document History:</strong> All your processed documents are saved and accessible anytime.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeAboutModal">&times;</span>
+            <h2 class="modal-title">About Kernify</h2>
+            <div class="summary-text">
+                <p>Hi, I'm a student developer, and Kernify is a solo project I built in 2025 to simplify document summarization.</p>
+                <p>It turns PDFs, DOCs, PPTs, and more into clean summaries, interactive mind maps, and key highlights using modern web tech and basic NLP techniques.</p>
+                <p>Kernify is a fast, minimal, and user-friendly platform designed to help you understand documents without wading through clutter.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeHelpModal">&times;</span>
+            <h2 class="modal-title">Kernify Help Center</h2>
+            <div class="summary-text">
+                <p><strong>Getting Started:</strong> Upload any supported document type and select your preferred summary format. Click "Process Document" to generate insights.</p>
+                <p><strong>Summary Options:</strong> Choose between brief overviews, detailed analyses, bullet points, or key insights depending on your needs.</p>
+                <p><strong>Mind Maps:</strong> Explore the conceptual relationships in your document through our interactive visualization tool.</p>
+                <p><strong>Highlights:</strong> Identify the most important sections with our automatic highlighting feature.</p>
+                <p><strong>Saving Documents:</strong> Create an account to save your processed documents to the cloud and access them from any device.</p>
+                <p><strong>Need More Help?</strong> Contact our support team at support@kernify.com</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Center Modal -->
+    <div class="modal" id="accountModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeAccountModal">&times;</span>
+            <h2 class="modal-title">Account Center</h2>
+            
+            <div class="account-section">
+                <div class="account-avatar" id="accountAvatar"></div>
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                
+                <div class="account-info">
+                    <div class="account-detail">
+                        <span>Name:</span>
+                        <span id="accountName">John Doe</span>
+                    </div>
+                    <div class="account-detail">
+                        <span>Email:</span>
+                        <span id="accountEmail">john@example.com</span>
+                    </div>
+                    <div class="account-detail">
+                        <span>Member Since:</span>
+                        <span id="accountSince">Jan 2023</span>
+                    </div>
+                </div>
+                
+                <div class="account-actions">
+                    <div class="account-btn" id="editProfileBtn">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </div>
+                    <div class="account-btn" id="changePasswordBtn">
+                        <i class="fas fa-key"></i> Change Password
+                    </div>
+                    <div class="account-btn" id="deactivateAccountBtn">
+                        <i class="fas fa-user-slash"></i> Deactivate Account
+                    </div>
+                    <div class="account-btn delete" id="deleteAccountBtn">
+                        <i class="fas fa-trash-alt"></i> Delete Account
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeDeleteModal">&times;</span>
+            <h2 class="modal-title">Confirm Account Deletion</h2>
+            
+            <div class="confirmation-modal">
+                <p>Are you sure you want to delete your account? This action is irreversible.</p>
+                <p>All your data, including document history and summaries, will be permanently deleted.</p>
+                
+                <div class="confirmation-buttons">
+                    <button class="confirmation-btn confirm-delete" id="confirmDeleteBtn">Delete Account</button>
+                    <button class="confirmation-btn cancel-delete" id="cancelDeleteBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deactivation Confirmation Modal -->
+    <div class="modal" id="deactivateConfirmModal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeDeactivateModal">&times;</span>
+            <h2 class="modal-title">Confirm Logout</h2>
+            <div class="confirmation-modal">
+                <p>Are you sure you want to deactivate your session?</p>
+                <p style="color:#e67e22; background:#fffbdd; border:2px solid #ffd700; border-radius:8px; padding:12px; margin:16px 0;">
+                    <strong>Warning:</strong> This will log you out of Kernify. You can log in again anytime.
+                </p>
+                <div class="confirmation-buttons">
+                    <button class="confirmation-btn confirm-delete" id="confirmDeactivateBtn">Log Out</button>
+                    <button class="confirmation-btn cancel-delete" id="cancelDeactivateBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== FIREBASE CONFIGURATION =====
+        // Replace with your actual Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBP4SNqNgh-wVjrEtQXgQvxiAK-5An4-3M",
+            authDomain: "kernify.firebaseapp.com",
+            projectId: "kernify",
+            storageBucket: "kernify.firebasestorage.app",
+            messagingSenderId: "981865176645",
+            appId: "1:981865176645:web:e2444187fa513103c20d2c",
+            measurementId: "G-ESZLC7PT3F"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        // ===== END FIREBASE CONFIG =====
+
+        class KernifyApp {
+            constructor() {
+                this.currentFile = null;
+                this.fileContent = '';
+                this.summaryOption = 'brief';
+                this.currentUser = null;
+                this.history = [];
+                this.mindMapScale = 1;
+                this.draggedNode = null;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setupDragAndDrop();
+                this.setupModals();
+                this.setupMindMapInteractions();
+                this.setupMobileNavigation();
+                this.initAuth();
+            }
+            
+            setupMobileNavigation() {
+                document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                    document.getElementById('mobileNav').classList.toggle('active');
+                });
+                
+                // Close mobile nav when clicking outside
+                document.addEventListener('click', (e) => {
+                    const mobileNav = document.getElementById('mobileNav');
+                    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+                    
+                    if (mobileNav.classList.contains('active') && 
+                        !mobileNav.contains(e.target) && 
+                        !mobileMenuBtn.contains(e.target)) {
+                        mobileNav.classList.remove('active');
+                    }
+                });
+                
+                // Mobile navigation links
+                document.getElementById('mobileFeaturesLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('featuresModal');
+                    document.getElementById('mobileNav').classList.remove('active');
+                });
+                
+                document.getElementById('mobileAboutLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('aboutModal');
+                    document.getElementById('mobileNav').classList.remove('active');
+                });
+                
+                document.getElementById('mobileHelpLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('helpModal');
+                    document.getElementById('mobileNav').classList.remove('active');
+                });
+                
+                document.getElementById('mobileLoginBtn').addEventListener('click', () => {
+                    this.showModal('loginModal');
+                    document.getElementById('mobileNav').classList.remove('active');
+                });
+                
+                document.getElementById('mobileSignupBtn').addEventListener('click', () => {
+                    this.showModal('signupModal');
+                    document.getElementById('mobileNav').classList.remove('active');
+                });
+            }
+
+            setupEventListeners() {
+                // File input
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    this.handleFileSelect(e.target.files[0]);
+                });
+
+                // Process button - fixed to not trigger file selection
+                document.getElementById('processBtn').addEventListener('click', () => {
+                    this.processDocument();
+                });
+
+                // Tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.switchTab(e.target.dataset.tab);
+                    });
+                });
+
+                // Summary options
+                document.querySelectorAll('.option-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        document.querySelectorAll('.option-card').forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        this.summaryOption = card.dataset.option;
+                        // Only regenerate summary if content already exists
+                        if (this.fileContent) {
+                            this.generateSummary();
+                        }
+                    });
+                });
+
+                // User actions
+                document.getElementById('loginBtn').addEventListener('click', () => this.showModal('loginModal'));
+                document.getElementById('signupBtn').addEventListener('click', () => this.showModal('signupModal'));
+
+                // Add login form submit
+                document.getElementById('loginSubmit').addEventListener('click', async () => {
+                    const email = document.getElementById('loginEmail').value.trim();
+                    const password = document.getElementById('loginPassword').value;
+                    if (!email || !password) {
+                        alert('Please enter both email and password.');
+                        return;
+                    }
+                    try {
+                        await auth.signInWithEmailAndPassword(email, password);
+                        this.hideModal('loginModal');
+                    } catch (error) {
+                        alert(error.message || 'Login failed.');
+                    }
+                });
+
+                // Add signup form submit
+                document.getElementById('signupSubmit').addEventListener('click', async () => {
+                    const name = document.getElementById('signupName').value.trim();
+                    const email = document.getElementById('signupEmail').value.trim();
+                    const password = document.getElementById('signupPassword').value;
+                    const confirmPassword = document.getElementById('signupConfirmPassword').value;
+                    if (!name || !email || !password || !confirmPassword) {
+                        alert('Please fill in all fields.');
+                        return;
+                    }
+                    if (password !== confirmPassword) {
+                        alert('Passwords do not match.');
+                        return;
+                    }
+                    try {
+                        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                        await userCredential.user.updateProfile({ displayName: name });
+                        this.hideModal('signupModal');
+                    } catch (error) {
+                        alert(error.message || 'Sign up failed.');
+                    }
+                });
+                
+                // Account actions
+                document.getElementById('userProfile').addEventListener('click', () => this.showModal('accountModal'));
+                document.getElementById('accountAvatar').addEventListener('click', () => {
+                    document.getElementById('avatarUpload').click();
+                });
+                document.getElementById('avatarUpload').addEventListener('change', (e) => {
+                    this.uploadProfilePicture(e.target.files[0]);
+                });
+                document.getElementById('editProfileBtn').addEventListener('click', () => this.editProfile());
+                document.getElementById('changePasswordBtn').addEventListener('click', () => this.changePassword());
+                document.getElementById('deactivateAccountBtn').addEventListener('click', () => {
+                    // Show warning modal for deactivation
+                    this.showModal('deactivateConfirmModal');
+                });
+                document.getElementById('deleteAccountBtn').addEventListener('click', () => {
+                    this.showModal('deleteConfirmModal');
+                });
+                document.getElementById('confirmDeleteBtn').addEventListener('click', () => this.deleteAccount());
+                document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+                    this.hideModal('deleteConfirmModal');
+                });
+            }
+
+            initAuth() {
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        this.currentUser = user;
+                        this.showUserProfile(user);
+                        this.loadHistory();
+                    } else {
+                        this.currentUser = null;
+                        this.hideUserProfile();
+                    }
+                });
+            }
+
+            setupMindMapInteractions() {
+                const container = document.getElementById('mindMapContainer');
+                
+                // Zoom controls
+                document.getElementById('zoomInBtn').addEventListener('click', () => {
+                    this.mindMapScale = Math.min(1.5, this.mindMapScale + 0.1);
+                    this.applyMindMapTransform();
+                });
+                
+                document.getElementById('zoomOutBtn').addEventListener('click', () => {
+                    this.mindMapScale = Math.max(0.7, this.mindMapScale - 0.1);
+                    this.applyMindMapTransform();
+                });
+                
+                document.getElementById('resetViewBtn').addEventListener('click', () => {
+                    this.mindMapScale = 1;
+                    this.applyMindMapTransform();
+                    container.scrollLeft = container.offsetWidth / 2;
+                    container.scrollTop = container.offsetHeight / 2;
+                });
+            }
+
+            setupModals() {
+                // Close buttons
+                document.getElementById('closeLoginModal').addEventListener('click', () => this.hideModal('loginModal'));
+                document.getElementById('closeSignupModal').addEventListener('click', () => this.hideModal('signupModal'));
+                document.getElementById('closeFeaturesModal').addEventListener('click', () => this.hideModal('featuresModal'));
+                document.getElementById('closeAboutModal').addEventListener('click', () => this.hideModal('aboutModal'));
+                document.getElementById('closeHelpModal').addEventListener('click', () => this.hideModal('helpModal'));
+                document.getElementById('closeAccountModal').addEventListener('click', () => this.hideModal('accountModal'));
+                document.getElementById('closeDeleteModal').addEventListener('click', () => this.hideModal('deleteConfirmModal'));
+                document.getElementById('closeDeactivateModal').addEventListener('click', () => this.hideModal('deactivateConfirmModal'));
+                document.getElementById('confirmDeactivateBtn').addEventListener('click', async () => {
+                    await auth.signOut();
+                    this.hideModal('deactivateConfirmModal');
+                    this.hideModal('accountModal');
+                });
+                document.getElementById('cancelDeactivateBtn').addEventListener('click', () => this.hideModal('deactivateConfirmModal'));
+                
+                // Modal toggles
+                document.getElementById('showSignup').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.hideModal('loginModal');
+                    this.showModal('signupModal');
+                });
+                
+                document.getElementById('showLogin').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.hideModal('signupModal');
+                    this.showModal('loginModal');
+                });
+                
+                // Feature links
+                document.getElementById('featuresLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('featuresModal');
+                });
+                
+                document.getElementById('aboutLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('aboutModal');
+                });
+                
+                document.getElementById('helpLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal('helpModal');
+                });
+                
+                // Close modals when clicking outside
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            this.hideModal(modal.id);
+                        }
+                    });
+                });
+            }
+
+            showModal(modalId) {
+                document.getElementById(modalId).style.display = 'flex';
+            }
+
+            hideModal(modalId) {
+                document.getElementById(modalId).style.display = 'none';
+            }
+
+            setupDragAndDrop() {
+                const uploadArea = document.getElementById('uploadArea');
+                
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    this.handleFileSelect(e.dataTransfer.files[0]);
+                });
+
+                uploadArea.addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+            }
+
+            handleFileSelect(file) {
+                if (!file) return;
+
+                this.currentFile = file;
+                this.updateFileInfo(file);
+                document.getElementById('processBtn').disabled = false;
+            }
+
+            updateFileInfo(file) {
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileSize').textContent = this.formatFileSize(file.size);
+                document.getElementById('fileType').textContent = file.type || this.getFileTypeFromName(file.name);
+                document.getElementById('fileStatus').textContent = 'Ready to process';
+            }
+
+            getFileTypeFromName(filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const types = {
+                    'pdf': 'PDF Document',
+                    'doc': 'Word Document',
+                    'docx': 'Word Document',
+                    'xls': 'Excel Spreadsheet',
+                    'xlsx': 'Excel Spreadsheet',
+                    'ppt': 'PowerPoint Presentation',
+                    'pptx': 'PowerPoint Presentation',
+                    'txt': 'Text File',
+                    'md': 'Markdown File',
+                    'html': 'HTML File'
+                };
+                return types[ext] || 'Unknown File Type';
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            async processDocument() {
+                if (!this.currentFile) return;
+
+                this.updateProgress(10);
+                document.getElementById('fileStatus').textContent = 'Processing...';
+                document.getElementById('processBtn').disabled = true;
+
+                try {
+                    // Extract text content
+                    this.updateProgress(30);
+                    this.fileContent = await this.extractTextContent(this.currentFile);
+                    
+                    this.updateProgress(50);
+                    
+                    // Show content area
+                    document.getElementById('contentArea').style.display = 'block';
+                    
+                    // Generate summary
+                    this.updateProgress(70);
+                    await this.generateSummary();
+                    
+                    // Generate mind map
+                    this.updateProgress(85);
+                    await this.generateMindMap();
+                    
+                    // Generate highlights
+                    this.updateProgress(95);
+                    await this.generateHighlights();
+                    
+                    this.updateProgress(100);
+                    document.getElementById('fileStatus').textContent = 'Completed';
+                    
+                    // Save to history
+                    this.saveToHistory();
+                    
+                } catch (error) {
+                    console.error('Error processing document:', error);
+                    document.getElementById('fileStatus').textContent = 'Error occurred';
+                    document.getElementById('summaryText').innerHTML = `<div class="summary-text">Error: ${error.message || 'Failed to process document'}</div>`;
+                } finally {
+                    document.getElementById('processBtn').disabled = false;
+                }
+            }
+
+            async extractTextContent(file) {
+                const extension = file.name.split('.').pop().toLowerCase();
+                
+                switch (extension) {
+                    case 'txt':
+                    case 'md':
+                    case 'html':
+                        return await this.readTextFile(file);
+                    
+                    case 'pdf':
+                        return await this.extractPdfText(file);
+                    
+                    case 'doc':
+                    case 'docx':
+                        return await this.extractDocText(file);
+                    
+                    case 'xls':
+                    case 'xlsx':
+                        return await this.extractExcelText(file);
+                    
+                    case 'ppt':
+                    case 'pptx':
+                        return await this.extractPptText(file);
+                    
+                    default:
+                        throw new Error('Unsupported file format');
+                }
+            }
+
+            async readTextFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+
+            async extractPdfText(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                let text = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    text += textContent.items.map(item => item.str).join(' ') + '\n';
+                }
+                
+                return text;
+            }
+
+            async extractDocText(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                return result.value;
+            }
+
+            async extractExcelText(file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                let text = '';
+                
+                workbook.SheetNames.forEach(sheetName => {
+                    const worksheet = workbook.Sheets[sheetName];
+                    const csv = XLSX.utils.sheet_to_csv(worksheet);
+                    text += csv + '\n';
+                });
+                
+                return text;
+            }
+
+            async extractPptText(file) {
+                // For PowerPoint files, we'll use a simplified approach
+                const arrayBuffer = await file.arrayBuffer();
+                const text = new TextDecoder().decode(arrayBuffer);
+                // Extract readable text from the binary data
+                return text.replace(/[^\x20-\x7E\n]/g, '').replace(/\s+/g, ' ').trim();
+            }
+
+            async generateSummary() {
+                const summaryText = this.createSummary(this.fileContent);
+                document.getElementById('summaryText').innerHTML = `<div class="summary-text">${summaryText}</div>`;
+            }
+
+            createSummary(text) {
+                const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+                const wordCount = text.split(' ').length;
+                
+                let summary = '';
+                
+                switch (this.summaryOption) {
+                    case 'brief':
+                        summary = this.createBriefSummary(sentences, wordCount);
+                        break;
+                    case 'detailed':
+                        summary = this.createDetailedSummary(sentences, wordCount);
+                        break;
+                    case 'bullet':
+                        summary = this.createBulletSummary(sentences);
+                        break;
+                    case 'key':
+                        summary = this.createKeyInsights(sentences);
+                        break;
+                }
+                
+                return summary;
+            }
+
+            createBriefSummary(sentences, wordCount) {
+                const topSentences = this.selectImportantSentences(sentences, 5);
+                return `
+                    <div class="summary-text">
+                        <h3>Document Overview</h3>
+                        <p>This document contains approximately <span class="stat-highlight">${wordCount} words</span> and covers several important topics. The core message can be summarized as follows:</p>
+                        
+                        <div class="insight-card">
+                            <p>${topSentences.slice(0, 3).join(' ')}</p>
+                        </div>
+                        
+                        <p>The document also addresses ${this.extractKeyTopics(this.fileContent).slice(0, 3).join(', ')} as key areas of focus.</p>
+                        
+                        <div class="conclusion">
+                            <p><strong>Key Takeaway:</strong> ${this.extractCoreInsight(sentences)}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            createDetailedSummary(sentences, wordCount) {
+                const topSentences = this.selectImportantSentences(sentences, 15);
+                const sections = this.groupSentencesByTopic(topSentences);
+                
+                let sectionHTML = '';
+                sections.forEach((section, index) => {
+                    sectionHTML += `
+                        <div class="section-title">Section ${index + 1}: ${section.title}</div>
+                        <p>${section.content}</p>
+                        <div class="key-point">
+                            <div class="key-point-icon"><i class="fas fa-lightbulb"></i></div>
+                            <div class="key-point-content">${section.insight}</div>
+                        </div>
+                    `;
+                });
+                
+                return `
+                    <div class="summary-text">
+                        <h3>Comprehensive Analysis</h3>
+                        <p>This document contains <span class="stat-highlight">${wordCount} words</span> organized into ${sections.length} key sections. The analysis reveals several important patterns and insights:</p>
+                        
+                        ${sectionHTML}
+                        
+                        <div class="section-title">Statistical Overview</div>
+                        <ul class="bullet-points">
+                            <li><strong>Key topics identified:</strong> ${this.extractKeyTopics(this.fileContent).slice(0, 5).join(', ')}</li>
+                            <li><strong>Most frequent concepts:</strong> ${this.getTopConcepts(this.fileContent, 3).join(', ')}</li>
+                            <li><strong>Document complexity:</strong> ${this.estimateReadingLevel(wordCount, sentences.length)}</li>
+                        </ul>
+                        
+                        <div class="conclusion">
+                            <p><strong>Overall Conclusion:</strong> ${this.extractCoreInsight(sentences)}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            createBulletSummary(sentences) {
+                const keyPoints = this.selectImportantSentences(sentences, 10);
+                let pointsHTML = '';
+                keyPoints.forEach((point, index) => {
+                    pointsHTML += `<li>${point.trim()}</li>`;
+                });
+                
+                return `
+                    <div class="summary-text">
+                        <h3>Key Points Summary</h3>
+                        <p>The document contains several important points that are critical to understanding its content:</p>
+                        
+                        <ul class="bullet-points">
+                            ${pointsHTML}
+                        </ul>
+                        
+                        <div class="key-point">
+                            <div class="key-point-icon"><i class="fas fa-exclamation-circle"></i></div>
+                            <div class="key-point-content">The most significant point is: ${this.extractCoreInsight(sentences)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            createKeyInsights(sentences) {
+                const insights = this.extractKeyInsights(sentences);
+                let insightsHTML = '';
+                insights.forEach((insight, index) => {
+                    insightsHTML += `
+                        <div class="key-point">
+                            <div class="key-point-icon"><i class="fas fa-star"></i></div>
+                            <div class="key-point-content">
+                                <strong>Insight ${index + 1}:</strong> ${insight}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                return `
+                    <div class="summary-text">
+                        <h3>Strategic Insights</h3>
+                        <p>After analyzing the document, we've identified several critical insights that represent the core value of this content:</p>
+                        
+                        ${insightsHTML}
+                        
+                        <div class="insight-card">
+                            <p><strong>Most Significant Insight:</strong> ${this.extractCoreInsight(sentences)}</p>
+                        </div>
+                        
+                        <p>These insights provide actionable intelligence that can guide decision-making and strategic planning.</p>
+                    </div>
+                `;
+            }
+
+            selectImportantSentences(sentences, count) {
+                // Improved importance scoring
+                const importantWords = ['important', 'significant', 'key', 'main', 'primary', 
+                                      'essential', 'critical', 'major', 'conclusion', 'summary',
+                                      'findings', 'results', 'recommendation', 'objective', 'purpose',
+                                      'goal', 'conclude', 'determine', 'impact', 'effect'];
+                
+                const scored = sentences.map(sentence => {
+                    let score = Math.min(sentence.length / 80, 3); // Base score on length (capped)
+                    
+                    // Check for important words
+                    importantWords.forEach(word => {
+                        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                        if (regex.test(sentence)) {
+                            score += 2;
+                        }
+                    });
+                    
+                    // Check for numerical data
+                    if (/(\d+%|\$[\d,]+|[\d,]+\s*(million|billion|thousand))/gi.test(sentence)) {
+                        score += 1.5;
+                    }
+                    
+                    // Check for position in document (first/last sentences)
+                    if (sentence === sentences[0] || sentence === sentences[sentences.length - 1]) {
+                        score += 1.2;
+                    }
+                    
+                    return { sentence: sentence.trim(), score };
+                });
+                
+                return scored
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, count)
+                    .map(item => item.sentence + '.');
+            }
+
+            extractCoreInsight(sentences) {
+                // Find the most representative sentence
+                const scored = sentences.map(sentence => {
+                    let score = 0;
+                    
+                    // Higher score for sentences containing conclusion words
+                    if (/(conclusion|summary|therefore|thus|in summary|in conclusion)/gi.test(sentence)) {
+                        score += 3;
+                    }
+                    
+                    // Higher score for sentences near the end
+                    const positionIndex = sentences.indexOf(sentence);
+                    const positionScore = (positionIndex / sentences.length) * 2;
+                    score += positionScore;
+                    
+                    return { sentence, score };
+                });
+                
+                return scored.sort((a, b) => b.score - a.score)[0].sentence;
+            }
+
+            extractKeyInsights(sentences) {
+                // Get the most important sentences and refine them
+                const insights = this.selectImportantSentences(sentences, 5);
+                return insights.map(insight => {
+                    // Remove introductory phrases
+                    insight = insight.replace(/^(however|moreover|furthermore|additionally|specifically|in particular|for example|for instance|namely|that is|i\.e\.|e\.g\.|in other words|in summary|in conclusion|to summarize|overall|therefore|thus|consequently|as a result|hence|so|because|since|as|although|though|while|whereas|despite|nevertheless|nonetheless|notwithstanding|regardless|yet|but|instead|rather|alternatively|otherwise)\W+/i, '');
+                    // Capitalize first letter
+                    return insight.charAt(0).toUpperCase() + insight.slice(1);
+                });
+            }
+
+            groupSentencesByTopic(sentences) {
+                // Group sentences by keywords
+                const topics = ['Introduction', 'Methodology', 'Results', 'Discussion', 'Conclusion'];
+                const sections = [];
+                
+                // Distribute sentences to sections
+                const sectionSize = Math.ceil(sentences.length / topics.length);
+                
+                for (let i = 0; i < topics.length; i++) {
+                    const start = i * sectionSize;
+                    const end = Math.min(start + sectionSize, sentences.length);
+                    const sectionSentences = sentences.slice(start, end);
+                    
+                    sections.push({
+                        title: topics[i],
+                        content: sectionSentences.join(' '),
+                        insight: this.extractCoreInsight(sectionSentences)
+                    });
+                }
+                
+                return sections;
+            }
+
+            getTopConcepts(text, count) {
+                const words = text.toLowerCase().split(/\W+/);
+                const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'cannot', 'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their', 'we', 'our', 'you', 'your']);
+                
+                const wordFreq = {};
+                words.forEach(word => {
+                    if (word.length > 4 && !stopWords.has(word)) {
+                        wordFreq[word] = (wordFreq[word] || 0) + 1;
+                    }
+                });
+                
+                return Object.entries(wordFreq)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, count)
+                    .map(([word]) => word.charAt(0).toUpperCase() + word.slice(1));
+            }
+
+            estimateReadingLevel(wordCount, sentenceCount) {
+                const wordsPerSentence = wordCount / sentenceCount;
+                
+                if (wordsPerSentence > 25) return 'Advanced (College level)';
+                if (wordsPerSentence > 20) return 'Intermediate (High school level)';
+                return 'Basic (Middle school level)';
+            }
+
+            async generateMindMap() {
+                const container = document.getElementById('mindMapContainer');
+                container.innerHTML = '';
+
+                // Create an inner container for absolute positioning
+                let inner = document.createElement('div');
+                inner.className = 'mind-map-inner';
+                container.appendChild(inner);
+
+                // Central node
+                const centralTopic = this.extractCentralTopic(this.fileContent);
+                const centerNode = document.createElement('div');
+                centerNode.className = 'mind-map-node center';
+                centerNode.textContent = centralTopic;
+                // Center in the large canvas
+                centerNode.style.left = '600px';
+                centerNode.style.top = '450px';
+                inner.appendChild(centerNode);
+
+                // Main topic nodes
+                const mainTopics = this.extractKeyTopics(this.fileContent, 5);
+                const angles = [0, 72, 144, 216, 288];
+                const centerX = 600, centerY = 450, radius = 250;
+
+                mainTopics.forEach((topic, index) => {
+                    const angle = angles[index] * (Math.PI / 180);
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+
+                    const node = document.createElement('div');
+                    node.className = 'mind-map-node';
+                    node.textContent = topic;
+                    node.style.left = `${x}px`;
+                    node.style.top = `${y}px`;
+                    inner.appendChild(node);
+
+                    // Connection line (optional: you can keep your connection code here)
+                    // ...existing connection code, but append to 'inner'...
+
+                    // Add subtopics
+                    const subtopics = this.extractSubtopics(this.fileContent, topic, 2);
+                    subtopics.forEach((subtopic, subIndex) => {
+                        const subRadius = 100;
+                        const subAngle = (subIndex * 120) * (Math.PI / 180);
+                        const subX = x + subRadius * Math.cos(subAngle);
+                        const subY = y + subRadius * Math.sin(subAngle);
+
+                        const subNode = document.createElement('div');
+                        subNode.className = 'mind-map-node';
+                        subNode.textContent = subtopic;
+                        subNode.style.left = `${subX}px`;
+                        subNode.style.top = `${subY}px`;
+                        inner.appendChild(subNode);
+
+                        // ...add subtopic connection lines if needed...
+                    });
+                });
+
+                // Center the scrollbars on the central node
+                container.scrollLeft = inner.offsetWidth / 2 - container.offsetWidth / 2;
+                container.scrollTop = inner.offsetHeight / 2 - container.offsetHeight / 2;
+            }
+
+            extractCentralTopic(text) {
+                // Use the first sentence as central topic
+                const firstSentence = text.split('.')[0];
+                if (firstSentence.length > 100) {
+                    return firstSentence.substring(0, 100) + '...';
+                }
+                return firstSentence;
+            }
+
+            extractKeyTopics(text, count = 5) {
+                const words = text.toLowerCase().split(/\W+/);
+                const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'cannot', 'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their', 'we', 'our', 'you', 'your']);
+                
+                const wordFreq = {};
+                words.forEach(word => {
+                    if (word.length > 4 && !stopWords.has(word)) {
+                        wordFreq[word] = (wordFreq[word] || 0) + 1;
+                    }
+                });
+                
+                return Object.entries(wordFreq)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, count)
+                    .map(([word]) => word.charAt(0).toUpperCase() + word.slice(1));
+            }
+
+            extractSubtopics(text, mainTopic, count = 2) {
+                // Find words that frequently appear near the main topic
+                const words = text.toLowerCase().split(/\W+/);
+                const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'cannot', 'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their', 'we', 'our', 'you', 'your']);
+                
+                const mainIndexes = [];
+                words.forEach((word, index) => {
+                    if (word === mainTopic.toLowerCase()) {
+                        mainIndexes.push(index);
+                    }
+                });
+                
+                const nearbyWords = {};
+                mainIndexes.forEach(index => {
+                    // Look at words before and after the main topic
+                    for (let i = Math.max(0, index - 5); i < Math.min(words.length, index + 6); i++) {
+                        if (i !== index && words[i].length > 4 && !stopWords.has(words[i])) {
+                            nearbyWords[words[i]] = (nearbyWords[words[i]] || 0) + 1;
+                        }
+                    }
+                });
+                
+                return Object.entries(nearbyWords)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, count)
+                    .map(([word]) => word.charAt(0).toUpperCase() + word.slice(1));
+            }
+
+            applyMindMapTransform() {
+                const container = document.getElementById('mindMapContainer');
+                const nodes = container.querySelectorAll('.mind-map-node');
+                
+                nodes.forEach(node => {
+                    if (!node.classList.contains('center')) {
+                        const scale = this.mindMapScale;
+                        node.style.transform = `scale(${scale})`;
+                    }
+                });
+            }
+
+            async generateHighlights() {
+                const highlightedContent = this.highlightImportantSections(this.fileContent);
+                document.getElementById('highlightedText').innerHTML = highlightedContent;
+            }
+
+            highlightImportantSections(text) {
+                const paragraphs = text.split('\n\n');
+                let highlightedText = '';
+                
+                paragraphs.forEach(para => {
+                    if (para.trim().length < 20) return;
+                    
+                    let highlightedPara = para;
+                    let isImportant = false;
+                    
+                    // Check for important keywords
+                    const importantKeywords = ['important', 'critical', 'essential', 'key', 'major', 
+                                             'significant', 'primary', 'core', 'vital', 'crucial',
+                                             'conclusion', 'summary', 'recommendation', 'finding',
+                                             'result', 'impact', 'effect', 'benefit', 'advantage',
+                                             'risk', 'challenge', 'opportunity', 'solution'];
+                    
+                    importantKeywords.forEach(keyword => {
+                        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+                        if (regex.test(para)) {
+                            isImportant = true;
+                            highlightedPara = highlightedPara.replace(regex, '<span class="highlight">$&</span>');
+                        }
+                    });
+                    
+                    // Highlight numbers and stats
+                    highlightedPara = highlightedPara.replace(/(\d+%|\$[\d,]+|[\d,]+\s*(million|billion|thousand))/gi, '<span class="highlight">$1</span>');
+                    
+                    // Highlight key phrases
+                    const keyPhrases = this.extractKeyPhrases(para);
+                    keyPhrases.forEach(phrase => {
+                        const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
+                        highlightedPara = highlightedPara.replace(regex, '<span class="highlight">$&</span>');
+                    });
+                    
+                    // Highlight headings
+                    if (para.length < 150 && /^[A-Z][^.!?]*$/.test(para)) {
+                        highlightedPara = `<strong>${highlightedPara}</strong>`;
+                    }
+                    
+                    if (isImportant || keyPhrases.length > 0) {
+                        highlightedPara = `<div style="margin-bottom: 20px; background: rgba(15, 20, 25, 0.3); padding: 15px; border-radius: 8px;">${highlightedPara}</div>`;
+                    } else {
+                        highlightedPara = `<div style="margin-bottom: 15px; opacity: 0.8;">${highlightedPara}</div>`;
+                    }
+                    
+                    highlightedText += highlightedPara;
+                });
+                
+                return highlightedText;
+            }
+
+            extractKeyPhrases(text) {
+                const phrases = [];
+                // Extract phrases in quotes
+                const quotedPhrases = text.match(/"(.*?)"/g) || [];
+                quotedPhrases.forEach(phrase => {
+                    phrases.push(phrase.replace(/"/g, ''));
+                });
+                
+                // Extract capitalized phrases
+                const capitalizedPhrases = text.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b)/g) || [];
+                capitalizedPhrases.forEach(phrase => {
+                    if (phrase.split(' ').length > 1) {
+                        phrases.push(phrase);
+                    }
+                });
+                
+                return [...new Set(phrases)]; // Remove duplicates
+            }
+
+            switchTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabName).classList.add('active');
+            }
+
+            updateProgress(percentage) {
+                document.getElementById('progressFill').style.width = `${percentage}%`;
+            }
+            
+            showUserProfile(user) {
+                document.getElementById('userProfile').style.display = 'flex';
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('signupBtn').style.display = 'none';
+                
+                const userName = user.displayName || user.email.split('@')[0];
+                const userInitial = userName.charAt(0).toUpperCase();
+                
+                document.getElementById('userName').textContent = userName;
+                document.getElementById('userAvatar').textContent = userInitial;
+                
+                // Set account info
+                document.getElementById('accountName').textContent = user.displayName || userName;
+                document.getElementById('accountEmail').textContent = user.email;
+                document.getElementById('accountSince').textContent = new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                
+                // Load profile picture if available
+                if (user.photoURL) {
+                    document.getElementById('userAvatar').style.backgroundImage = `url(${user.photoURL})`;
+                    document.getElementById('accountAvatar').style.backgroundImage = `url(${user.photoURL})`;
+                } else {
+                    document.getElementById('userAvatar').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    document.getElementById('accountAvatar').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    document.getElementById('userAvatar').textContent = userInitial;
+                }
+            }
+
+            hideUserProfile() {
+                document.getElementById('userProfile').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'inline-block';
+                document.getElementById('signupBtn').style.display = 'inline-block';
+            }
+            
+            async uploadProfilePicture(file) {
+                if (!file || !this.currentUser) return;
+                
+                try {
+                    // Upload file to Firebase storage
+                    const storageRef = storage.ref(`profile_pictures/${this.currentUser.uid}`);
+                    const snapshot = await storageRef.put(file);
+                    
+                    // Get download URL
+                    const downloadURL = await snapshot.ref.getDownloadURL();
+                    
+                    // Update user profile
+                    await this.currentUser.updateProfile({
+                        photoURL: downloadURL
+                    });
+                    
+                    // Update UI
+                    document.getElementById('userAvatar').style.backgroundImage = `url(${downloadURL})`;
+                    document.getElementById('accountAvatar').style.backgroundImage = `url(${downloadURL})`;
+                    document.getElementById('userAvatar').textContent = '';
+                    
+                    alert('Profile picture updated successfully!');
+                } catch (error) {
+                    console.error('Error uploading profile picture:', error);
+                    alert('Failed to update profile picture. Please try again.');
+                }
+            }
+            
+            async saveToHistory() {
+                if (!this.currentUser || !this.currentFile) return;
+                
+                const historyItem = {
+                    fileName: this.currentFile.name,
+                    fileType: this.currentFile.type || this.getFileTypeFromName(this.currentFile.name),
+                    fileSize: this.currentFile.size,
+                    date: new Date().toISOString(),
+                    summaryOption: this.summaryOption
+                };
+                
+                // Add to Firestore
+                try {
+                    await db.collection('users').doc(this.currentUser.uid).collection('history').add(historyItem);
+                    // Reload history to show the new item
+                    this.loadHistory();
+                } catch (error) {
+                    console.error('Error saving history:', error);
+                }
+            }
+
+            async loadHistory() {
+                if (!this.currentUser) return;
+                
+                try {
+                    const historyList = document.getElementById('historyList');
+                    historyList.innerHTML = '<div class="loading"><div class="spinner"></div>Loading history...</div>';
+                    
+                    const snapshot = await db.collection('users').doc(this.currentUser.uid).collection('history')
+                        .orderBy('date', 'desc')
+                        .limit(5)
+                        .get();
+                    
+                    if (snapshot.empty) {
+                        historyList.innerHTML = '<div class="empty-history">No history yet. Process your first document!</div>';
+                        return;
+                    }
+                    
+                    historyList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const item = doc.data();
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        historyItem.innerHTML = `
+                            <div class="history-item-title">
+                                <i class="fas fa-file"></i> ${item.fileName}
+                            </div>
+                            <div class="history-item-details">
+                                <span>${this.formatFileSize(item.fileSize)}</span>
+                                <span>${new Date(item.date).toLocaleDateString()}</span>
+                            </div>
+                        `;
+                        historyList.appendChild(historyItem);
+                    });
+                } catch (error) {
+                    console.error('Error loading history:', error);
+                    document.getElementById('historyList').innerHTML = '<div class="empty-history">Failed to load history</div>';
+                }
+            }
+            
+            editProfile() {
+                const newName = prompt('Enter your new name:', document.getElementById('accountName').textContent);
+                if (newName && newName.trim() !== '') {
+                    this.currentUser.updateProfile({
+                        displayName: newName
+                    }).then(() => {
+                        document.getElementById('accountName').textContent = newName;
+                        document.getElementById('userName').textContent = newName;
+                        alert('Profile updated successfully!');
+                    }).catch(error => {
+                        console.error('Error updating profile:', error);
+                        alert('Failed to update profile. Please try again.');
+                    });
+                }
+            }
+            
+            changePassword() {
+                const newPassword = prompt('Enter your new password:');
+                if (newPassword && newPassword.length >= 6) {
+                    this.currentUser.updatePassword(newPassword).then(() => {
+                        alert('Password updated successfully!');
+                    }).catch(error => {
+                        console.error('Error updating password:', error);
+                        alert('Failed to update password. Please try again.');
+                    });
+                } else if (newPassword !== null) {
+                    alert('Password must be at least 6 characters long');
+                }
+            }
+            
+            async deleteAccount() {
+                try {
+                    // Delete user data from Firestore
+                    const userRef = db.collection('users').doc(this.currentUser.uid);
+                    await userRef.delete();
+                    
+                    // Delete user from Firebase Auth
+                    await this.currentUser.delete();
+                    
+                    // Hide account modal
+                    this.hideModal('deleteConfirmModal');
+                    this.hideModal('accountModal');
+                    
+                    alert('Your account has been deleted successfully.');
+                } catch (error) {
+                    console.error('Error deleting account:', error);
+                    alert('Failed to delete account. Please try again.');
+                }
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set PDF.js worker
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            }
+            
+            // Initialize Kernify
+            window.kernify = new KernifyApp();
+        });
+    </script>
+</body>
+</html>
