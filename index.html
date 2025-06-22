@@ -838,55 +838,7 @@
             .options-grid {
                 grid-template-columns: 1fr;
             }
-
-            /* Mobile menu styles */
-.mobile-menu-btn {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 28px;
-    cursor: pointer;
-    display: none;
-    margin-left: 16px;
-    z-index: 1100;
-}
-@media (max-width: 768px) {
-    .mobile-menu-btn {
-        display: block;
-    }
-    .mobile-menu {
-        display: none;
-        position: fixed;
-        top: 60px;
-        right: 0;
-        width: 80vw;
-        max-width: 320px;
-        background: rgba(26, 31, 41, 0.98);
-        box-shadow: -2px 0 16px rgba(0,0,0,0.2);
-        z-index: 2000;
-        padding: 24px 16px;
-        border-radius: 12px 0 0 12px;
-        animation: fadeIn 0.3s;
-    }
-    .mobile-menu nav {
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        margin-bottom: 24px;
-    }
-    .mobile-user-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-    .mobile-menu .btn {
-        width: 100%;
-    }
-    .mobile-menu .user-profile {
-        gap: 8px;
-        margin-top: 10px;
-    }
-}
+        }
         
         /* Summary Enhancements */
         .section-title {
@@ -1119,62 +1071,6 @@
             font-size: 12px;
             font-weight: bold;
         }
-
-        /* ===== HAMBURGER MENU ===== */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 28px;
-            cursor: pointer;
-            display: none;
-            margin-left: 16px;
-            z-index: 1100;
-        }
-
-        .mobile-menu-btn:hover {
-            color: #ffffff;
-        }
-
-        .mobile-menu {
-            display: none;
-            position: fixed;
-            top: 60px;
-            right: 0;
-            width: 80vw;
-            max-width: 320px;
-            background: rgba(26, 31, 41, 0.98);
-            box-shadow: -2px 0 16px rgba(0,0,0,0.2);
-            z-index: 2000;
-            padding: 24px 16px;
-            border-radius: 12px 0 0 12px;
-            animation: fadeIn 0.3s;
-        }
-
-        .mobile-menu nav {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            margin-bottom: 24px;
-        }
-
-        .mobile-user-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .mobile-menu .btn {
-            width: 100%;
-        }
-
-        .mobile-menu .user-profile {
-            gap: 8px;
-            margin-top: 10px;
-        }
-        
-        /* ===== END STYLES ===== */
     </style>
 </head>
 <body>
@@ -1198,27 +1094,6 @@
             </div>
         </div>
     </header>
-
-    <!-- Add hamburger button -->
-    <button class="mobile-menu-btn" id="mobileMenuBtn" style="display:none;">
-        <i class="fas fa-bars"></i>
-    </button>
-    <!-- Mobile menu (hidden by default) -->
-    <div class="mobile-menu" id="mobileMenu" style="display:none;">
-        <nav>
-            <a href="#" class="nav-link" id="featuresLinkMobile"><i class="fas fa-star"></i> Features</a>
-            <a href="#" class="nav-link" id="aboutLinkMobile"><i class="fas fa-info-circle"></i> About</a>
-            <a href="#" class="nav-link" id="helpLinkMobile"><i class="fas fa-question-circle"></i> Help</a>
-        </nav>
-        <div class="mobile-user-actions" id="mobileUserActions">
-            <button class="btn btn-login" id="loginBtnMobile">Log In</button>
-            <button class="btn btn-signup" id="signupBtnMobile">Sign Up</button>
-            <div class="user-profile" id="userProfileMobile" style="display: none;">
-                <div class="user-avatar" id="userAvatarMobile"></div>
-                <div class="user-name" id="userNameMobile">User</div>
-            </div>
-        </div>
-    </div>
 
     <!-- Main content area -->
     <div class="container">
@@ -1637,39 +1512,6 @@
                 document.getElementById('confirmDeleteBtn').addEventListener('click', () => this.deleteAccount());
                 document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
                     this.hideModal('deleteConfirmModal');
-                });
-                
-                // Mobile menu actions
-                document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-                    const menu = document.getElementById('mobileMenu');
-                    menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-                });
-                
-                document.getElementById('featuresLinkMobile').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.showModal('featuresModal');
-                    document.getElementById('mobileMenu').style.display = 'none';
-                });
-                
-                document.getElementById('aboutLinkMobile').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.showModal('aboutModal');
-                    document.getElementById('mobileMenu').style.display = 'none';
-                });
-                
-                document.getElementById('helpLinkMobile').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.showModal('helpModal');
-                    document.getElementById('mobileMenu').style.display = 'none';
-                });
-                
-                // Close mobile menu when clicking outside
-                document.addEventListener('click', (e) => {
-                    const menu = document.getElementById('mobileMenu');
-                    const button = document.getElementById('mobileMenuBtn');
-                    if (menu.style.display === 'flex' && !menu.contains(e.target) && e.target !== button) {
-                        menu.style.display = 'none';
-                    }
                 });
             }
 
@@ -2622,78 +2464,6 @@
             // Initialize Kernify
             window.kernify = new KernifyApp();
         });
-
-        // ===== MOBILE MENU LOGIC =====
-const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-const mobileMenu = document.getElementById('mobileMenu');
-let mobileMenuOpen = false;
-
-function toggleMobileMenu(show) {
-    if (show === undefined) mobileMenuOpen = !mobileMenuOpen;
-    else mobileMenuOpen = show;
-    mobileMenu.style.display = mobileMenuOpen ? 'block' : 'none';
-    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
-}
-mobileMenuBtn.addEventListener('click', () => toggleMobileMenu());
-window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) toggleMobileMenu(false);
-});
-document.addEventListener('click', (e) => {
-    if (mobileMenuOpen && !mobileMenu.contains(e.target) && e.target !== mobileMenuBtn) {
-        toggleMobileMenu(false);
-    }
-});
-
-// Mobile nav links
-document.getElementById('featuresLinkMobile').addEventListener('click', (e) => {
-    e.preventDefault(); toggleMobileMenu(false); window.kernify.showModal('featuresModal');
-});
-document.getElementById('aboutLinkMobile').addEventListener('click', (e) => {
-    e.preventDefault(); toggleMobileMenu(false); window.kernify.showModal('aboutModal');
-});
-document.getElementById('helpLinkMobile').addEventListener('click', (e) => {
-    e.preventDefault(); toggleMobileMenu(false); window.kernify.showModal('helpModal');
-});
-
-// Mobile login/signup
-document.getElementById('loginBtnMobile').addEventListener('click', () => {
-    toggleMobileMenu(false); window.kernify.showModal('loginModal');
-});
-document.getElementById('signupBtnMobile').addEventListener('click', () => {
-    toggleMobileMenu(false); window.kernify.showModal('signupModal');
-});
-
-// Sync user profile state for mobile
-function updateMobileUserProfile(user) {
-    const userProfileMobile = document.getElementById('userProfileMobile');
-    const loginBtnMobile = document.getElementById('loginBtnMobile');
-    const signupBtnMobile = document.getElementById('signupBtnMobile');
-    if (user) {
-        userProfileMobile.style.display = 'flex';
-        loginBtnMobile.style.display = 'none';
-        signupBtnMobile.style.display = 'none';
-        document.getElementById('userNameMobile').textContent = user.displayName || user.email.split('@')[0];
-        document.getElementById('userAvatarMobile').textContent = (user.displayName || user.email[0]).toUpperCase();
-        if (user.photoURL) {
-            document.getElementById('userAvatarMobile').style.backgroundImage = `url(${user.photoURL})`;
-        } else {
-            document.getElementById('userAvatarMobile').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        }
-    } else {
-        userProfileMobile.style.display = 'none';
-        loginBtnMobile.style.display = 'block';
-        signupBtnMobile.style.display = 'block';
-    }
-}
-window.kernifyMobileProfileSync = updateMobileUserProfile;
-
-// Mobile profile click
-document.getElementById('userProfileMobile').addEventListener('click', () => {
-    toggleMobileMenu(false); window.kernify.showModal('accountModal');
-});
     </script>
-    <footer class="text-center mt-12 py-6">
-            <center><p class="text-sm text-gray-600">&copy; <span id="current-year"></span> Kernify. Crafted with <i class="fas fa-heart text-red-500"> Created by Rosy.</i>.</p></center>
-        </footer>
 </body>
 </html>
